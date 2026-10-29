@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smd"
+version = "0.1.0"
+description = "NSE Smart-Money Anomaly Detector: fraud-style anomaly detection on Indian market activity"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14",
+    "duckdb>=1.0",
+    "pandera>=0.20",
+    "httpx>=0.27",
+    "pyyaml>=6",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.1",
+    "typer>=0.12",
+    "scipy>=1.11",
+    "statsmodels>=0.14",
+    "scikit-learn>=1.4",
+    "lightgbm>=4.0",
+    "skfolio>=0.5",
+    "torch>=2.1",
+    "matplotlib>=3.8",
+    "jinja2>=3.1",
+    "markdown>=3.5",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=4", "hypothesis>=6.90", "ruff>=0.4", "mypy>=1.8", "types-PyYAML"]
+shap = ["shap>=0.44"]
+
+[project.scripts]
+smd = "smd.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+ignore = ["E501", "B008"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = false
+disallow_untyped_defs = false
+no_implicit_optional = true
+files = ["src/smd"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["slow: end-to-end tests (deselect with -m 'not slow')"]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::FutureWarning"]
+
+[tool.coverage.run]
+source = ["smd"]
+omit = ["src/smd/cli.py"]

@@ -1,0 +1,14 @@
+Security Wise Delivery Position - Compulsory Rolling Settlement
+10,MTO,15032016,338885898,0001585
+Trade Date <15-MAR-2016>,Settlement Type <N>,Settlement No <2016051>,Settlement Date <17-MAR-2016>
+Record Type,Sr No,Name of Security,Quantity Traded,Deliverable Quantity(gross across client level),% of Deliverable Quantity to Traded Quantity
+20,1,20MICRONS,EQ,17151,12287,71.64
+20,2,3IINFOTECH,EQ,1185364,718326,60.60
+20,3,3MINDIA,EQ,1328,1251,94.20
+20,4,8KMILES,EQ,57193,9175,16.04
+20,5,A2ZINFRA,EQ,112506,106706,94.84
+20,6,AARTIDRUGS,EQ,3711,2633,70.95
+20,7,AARTIIND,EQ,22104,13634,61.68
+20,8,AARVEEDEN,EQ,6996,3047,43.55
+20,9,ABAN,EQ,1214959,250219,20.59
+20,10,ABB,EQ,33772,9482,28.08

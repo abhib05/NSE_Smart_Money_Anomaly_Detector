@@ -1,0 +1,16 @@
+# Indian equity delivery trading costs (fractions of trade value unless noted).
+# Rates as published by NSE / SEBI / discount brokers in 2025-26. VERIFY against your broker's
+# current contract note before the final run - these change (e.g. NSE txn charge revised Oct-2024).
+costs:
+  stt_buy: 0.001              # Securities Transaction Tax, delivery buy (0.1%)
+  stt_sell: 0.001             # delivery sell (0.1%)
+  brokerage_pct: 0.0          # discount brokers charge zero on delivery
+  brokerage_cap_inr: 20.0     # per-order cap if brokerage_pct > 0
+  exchange_txn: 0.0000297     # NSE transaction charge 0.00297%
+  sebi_fee: 0.000001          # Rs 10 per crore
+  stamp_duty_buy: 0.00015     # 0.015% on buys
+  gst_rate: 0.18              # on brokerage + exchange + SEBI fees
+  dp_charge_per_sell_inr: 15.93  # depository charge per scrip sold
+  slippage:
+    base_bps: 5.0
+    impact_bps_at_1pct: 10.0  # impact = impact_bps_at_1pct * sqrt(participation / 1%)

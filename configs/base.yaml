@@ -1,0 +1,71 @@
+# Base configuration. Every date, size, horizon and seed used by the pipeline lives here.
+seed: 42
+
+paths:
+  data_dir: data           # raw/ and processed/ live under this directory
+  runs_dir: runs
+  reports_dir: reports
+  bronze_override: null     # set to a directory of bronze parquet files to skip ingest (fixture)
+
+ingest:
+  start: 2014-01-01        # one year of warm-up before study_start
+  end: null                # null = up to yesterday
+  rate_limit_per_sec: 2.0
+  max_retries: 5
+  timeout_sec: 30
+  udiff_cutoff: 2024-07-08 # bhavcopy schema switch (old CSV before, UDiFF from this date)
+  refetch_recent_days: 7   # 404s younger than this are retried on the next run
+
+study_start: 2015-01-01
+dev_end: 2024-12-31
+test_start: 2025-01-01
+
+clean:
+  max_abs_return: 0.30          # |adjusted daily return| above this with no corporate action -> flag
+  volume_z_threshold: 8.0       # robust z of log volume vs trailing window
+  volume_z_lookback: 60
+  split_ratio_tolerance: 0.03   # tolerance when matching a jump to a split/bonus ratio
+  infer_missing_ca_from_prevclose: true
+
+universe:
+  size: 500
+  liquidity_lookback_days: 126
+  min_history_days: 200
+  max_missing_frac: 0.05
+
+features:
+  winsor_pct: 0.01
+  bulk_days_since_cap: 60
+
+labels:
+  horizons: [5, 20]
+  execution: next_open      # next_open | next_close
+
+cv:
+  first_train_months: 36    # anomaly models: first fold trains on study_start .. +3y
+  retrain_every_months: 12  # folds retrain on calendar-period boundaries
+  embargo_days: 20
+  ranker_first_train_months: 24  # ranker trains on OOS anomaly scores only, so it starts later
+
+portfolio:
+  rebalance: weekly         # last trading day of each week
+  top_k: 25
+  max_weight: 0.10
+  sell_rank_buffer: 1.5     # keep a holding while its rank <= buffer * top_k
+  notional_inr: 1000000
+  max_adv_participation: 0.05  # position <= 5% of 21d median traded value
+  hrp_lookback_days: 126
+  sector_cap: null          # no point-in-time sector data in NSE archives (documented)
+
+backtest:
+  delisting_haircut: 0.10
+  stale_price_exit_days: 5
+  rf_annual: 0.065
+
+anomaly:
+  seq_len: 30
+  event_top_pct: 0.02
+
+research:
+  bootstrap_samples: 1000
+  event_window: [-20, 40]
