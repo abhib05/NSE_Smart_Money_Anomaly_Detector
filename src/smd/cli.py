@@ -163,6 +163,23 @@ def research(
 
 
 @app.command()
+def train(
+    variant: Annotated[str, typer.Option(help="base | base+delivery | base+delivery+anomaly | all")] = "all",
+    config: ConfigOpt = None,
+    run: RunOpt = None,
+) -> None:
+    """LightGBM ranker variants with purged walk-forward CV; ablation table on dev folds."""
+    from smd.model.ranker import VARIANTS, run_train
+
+    cfg = _setup(config)
+    r = get_run(cfg, run, "train")
+    variants = VARIANTS if variant == "all" else (variant,)
+    stats = run_train(cfg, r, variants)
+    log.info("train: %s", stats)
+    r.record_stage(cfg, "train", stats)
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views

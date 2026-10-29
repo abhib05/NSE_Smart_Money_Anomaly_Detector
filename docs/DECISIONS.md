@@ -95,3 +95,14 @@ on the total-return series). `label_end_h` is stored for purging.
   trading days are dropped; matched controls = same-day universe stocks in the same liquidity
   and volatility terciles; confidence bands cluster by event date.
 * Research uses the development period only; the test period is evaluated once (Phase 8).
+
+## D-014 — Ranker design and fixed variant list (Phase 6)
+* Three variants fixed before looking at results: `base`, `base+delivery`,
+  `base+delivery+anomaly`. Their comparison is the project's answer.
+* Rows: weekly rebalance dates (last trading day of the week) where all variants have inputs.
+  The anomaly scores are themselves out-of-sample, so the ranker's first fold starts 2 years
+  after the first anomaly fold.
+* Target: cross-sectional rank of `fwd_excess_5d`; LightGBM regression, deterministic mode.
+* Purge (label end >= test start) + 20-day embargo on every fold; CombinatorialPurgedCV
+  (6 folds, 2 test folds) as a robustness check on the development period.
+* SHAP from LightGBM's built-in TreeSHAP on development folds only.

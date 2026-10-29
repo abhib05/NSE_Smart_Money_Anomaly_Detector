@@ -38,3 +38,7 @@
 ## Phase 5 — Signal research
 - Rank IC with block-bootstrap CIs, IC IR, % positive; quintile spreads; event study with matched controls and date-clustered bands; robustness by year and liquidity tercile; LSTM-AE vs Isolation Forest vs delivery-z rule.
 - `smd research` writes tables and charts to `runs/<id>/research_dev/`.
+
+## Phase 6 — Ranking model & ablation
+- LightGBM ranker, three fixed variants, purged walk-forward CV, TreeSHAP importances, CPCV robustness; ablation table on development folds only.
+- Tests: CV leakage on the ranker's actual training rows, determinism, nested variants.
