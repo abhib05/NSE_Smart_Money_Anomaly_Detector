@@ -145,6 +145,24 @@ def anomaly(
 
 
 @app.command()
+def research(
+    period: Annotated[str, typer.Option(help="dev (default) | test - test is reserved for `smd final-test`")] = "dev",
+    config: ConfigOpt = None,
+    run: RunOpt = None,
+) -> None:
+    """Signal research: rank IC, quintiles, event study, robustness (development period)."""
+    from smd.research.run import run_research
+
+    if period != "dev":
+        raise typer.BadParameter("only the development period here; the test period is evaluated by `smd final-test`")
+    cfg = _setup(config)
+    r = get_run(cfg, run, "research")
+    stats = run_research(cfg, r, period)
+    log.info("research: %s", stats)
+    r.record_stage(cfg, "research", stats)
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views

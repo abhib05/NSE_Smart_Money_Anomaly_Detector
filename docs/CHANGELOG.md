@@ -34,3 +34,7 @@
 - Isolation Forest baseline on behaviour summaries; one-line delivery-z rule baseline.
 - Cross-sectional percentile scores + accumulation filter → `gold/anomaly_scores`.
 - Tests: overfit-tiny-batch, shapes, determinism, anomaly separation, window look-ahead, OOS coverage, planted-event sanity, CV leakage.
+
+## Phase 5 — Signal research
+- Rank IC with block-bootstrap CIs, IC IR, % positive; quintile spreads; event study with matched controls and date-clustered bands; robustness by year and liquidity tercile; LSTM-AE vs Isolation Forest vs delivery-z rule.
+- `smd research` writes tables and charts to `runs/<id>/research_dev/`.

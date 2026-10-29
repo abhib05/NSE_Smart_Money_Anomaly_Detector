@@ -87,3 +87,11 @@ on the total-return series). `label_end_h` is stored for purging.
   at *t*), converted to a cross-sectional percentile per date.
 * Accumulation filter: percentile x 1[delivery z > 0, net bulk buys 20d >= 0, 5d return >
   -1 x 5-day vol]. The one-line baseline `delivery_z_rule` is scored with the same pipeline.
+
+## D-013 — Research methodology (Phase 5)
+* Daily rank IC with a moving-block bootstrap (block = label horizon) for the mean-IC CI,
+  because overlapping h-day labels make daily ICs autocorrelated.
+* Event study: top 2% accumulation scores per day; repeated events of the same stock within 20
+  trading days are dropped; matched controls = same-day universe stocks in the same liquidity
+  and volatility terciles; confidence bands cluster by event date.
+* Research uses the development period only; the test period is evaluated once (Phase 8).
