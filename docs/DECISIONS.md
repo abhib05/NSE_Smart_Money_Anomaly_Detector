@@ -56,3 +56,21 @@ rounding — the look-ahead tests compare with a 1e-9 relative tolerance). Trade
 Dividends are applied as `1 - D / prev_close` on the ex-date to a separate `tr_factor`;
 labels and backtest marking use `adj_open_tr` / `adj_close_tr`, price features use the
 price-only `adj_*` columns.
+
+## D-010 — Timing convention (Phase 3)
+NSE publishes bhavcopy, delivery (MTO) and bulk/block deals after the close. Features are
+computed at the close of *t*; trades execute at the **open of t+1** (configurable to the
+close of t+1); labels start from that execution price (`fwd_ret_h = P(t+1+h)/P(t+1) - 1`
+on the total-return series). `label_end_h` is stored for purging.
+
+## D-011 — Feature definitions (Phase 3)
+* "delivery z" means the z-score of delivery % against the stock's own previous 60 days;
+  z-scores always exclude day *t* from the mean/std.
+* Quiet accumulation: delivery z > 2 while |5d return| < 21d daily vol x sqrt(5).
+* Quantities are standardised in logs (`log(x)`, not `log1p`) so a backward split
+  adjustment is an exact additive shift (keeps look-ahead tests exact to 1e-9).
+* The anomaly channel `bh_turnover_rank` ranks traded value across **all** stocks traded that
+  day. A first version ranked only among stocks that are ever in the universe — a set that
+  depends on the future. The future-perturbation test caught it.
+* Features are stored raw; models rank-normalise per date (winsorise 1/99%, rank to [-1, 1],
+  missing -> 0).

@@ -151,6 +151,46 @@ SILVER_DEALS = DataFrameSchema(
     coerce=True,
 )
 
+GOLD_UNIVERSE = DataFrameSchema(
+    {
+        "date": _dt,
+        "isin": Column(str),
+        "liquidity_rank": Column(int, Check.ge(1)),
+        "med_traded_value": Column(float, Check.gt(0)),
+        "in_universe": Column(bool),
+    },
+    unique=["date", "isin"],
+    strict=True,
+    coerce=True,
+)
+
+GOLD_FEATURES = DataFrameSchema(
+    {
+        "date": _dt,
+        "isin": Column(str),
+        "delivery_pct": Column(float, Check.in_range(0, 100), nullable=True),
+        "delivery_z_xs_rank": Column(float, Check.in_range(-1, 1), nullable=True),
+        "quiet_accumulation": Column(float, Check.isin([0.0, 1.0]), nullable=True),
+        "bulk_buyers_20d": Column(float, Check.ge(0), nullable=True),
+        "bulk_imbalance_20d": Column(float, Check.in_range(-1, 1), nullable=True),
+    },
+    unique=["date", "isin"],
+    strict=False,
+    coerce=True,
+)
+
+GOLD_LABELS = DataFrameSchema(
+    {
+        "date": _dt,
+        "isin": Column(str),
+        "fwd_ret_5d": Column(float, Check.gt(-1), nullable=True),
+        "fwd_excess_5d": Column(float, nullable=True),
+    },
+    unique=["date", "isin"],
+    strict=False,
+    coerce=True,
+)
+
 SCHEMAS: dict[str, DataFrameSchema] = {
     "bronze.bhavcopy": BRONZE_BHAVCOPY,
     "bronze.delivery": BRONZE_DELIVERY,
@@ -160,6 +200,9 @@ SCHEMAS: dict[str, DataFrameSchema] = {
     "bronze.calendar": BRONZE_CALENDAR,
     "silver.daily_panel": SILVER_DAILY_PANEL,
     "silver.deals": SILVER_DEALS,
+    "gold.universe": GOLD_UNIVERSE,
+    "gold.features": GOLD_FEATURES,
+    "gold.labels": GOLD_LABELS,
 }
 
 

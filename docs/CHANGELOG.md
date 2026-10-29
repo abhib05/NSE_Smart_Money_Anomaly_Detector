@@ -20,3 +20,10 @@
 - Silver tables: `daily_panel`, `isin_map`, `corporate_actions`, `deals` (mapped to security ids), `benchmark`, `dq_summary`; pandera schemas.
 - Deterministic synthetic fixture (`smd/fixture.py`, `tests/fixtures/bronze`, `configs/fixture.yaml`) with planted splits, ISIN change, symbol change, delisting, bad prints and accumulation events.
 - CLI: `smd clean`, `smd spotcheck SYMBOL DATE`. Decisions D-005…D-009.
+
+## Phase 3 — Universe, features, labels
+- Point-in-time liquidity universe (top N by trailing 126d median traded value, ≥200 days history, ≤5% missing).
+- Feature registry (24 features + cross-sectional delivery rank) in price / liquidity / delivery / bulk groups, plus 8 anomaly behaviour channels.
+- Forward-return labels (open t+1 → open t+1+h on total-return prices, excess vs EW universe, label end dates).
+- Future-perturbation look-ahead tests for every feature, behaviour channel and the universe; label alignment tests. The tests caught a real leak in `bh_turnover_rank` (fixed, D-011).
+- CLI: `smd universe|features|labels`.

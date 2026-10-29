@@ -94,6 +94,39 @@ def spotcheck(
 
 
 @app.command()
+def universe(config: ConfigOpt = None, run: RunOpt = None) -> None:
+    """Point-in-time liquidity universe."""
+    from smd.pipeline import run_universe
+
+    cfg = _setup(config)
+    stats = run_universe(cfg)
+    log.info("universe: %s", stats)
+    get_run(cfg, run, "universe").record_stage(cfg, "universe", stats)
+
+
+@app.command()
+def features(config: ConfigOpt = None, run: RunOpt = None) -> None:
+    """Feature registry -> gold features + anomaly behaviour channels."""
+    from smd.pipeline import run_features
+
+    cfg = _setup(config)
+    stats = run_features(cfg)
+    log.info("features: %d rows", stats["rows"])
+    get_run(cfg, run, "features").record_stage(cfg, "features", stats)
+
+
+@app.command()
+def labels(config: ConfigOpt = None, run: RunOpt = None) -> None:
+    """Forward-return labels (open t+1 -> open t+1+h, total return, excess vs EW universe)."""
+    from smd.pipeline import run_labels
+
+    cfg = _setup(config)
+    stats = run_labels(cfg)
+    log.info("labels: %s", stats)
+    get_run(cfg, run, "labels").record_stage(cfg, "labels", stats)
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views
