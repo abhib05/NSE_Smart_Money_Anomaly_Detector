@@ -44,3 +44,16 @@ def fixture_panel(fixture_cfg):
     build_silver(fixture_cfg)
     return read_dataset(fixture_cfg, "silver", "daily_panel")
 
+
+@pytest.fixture(scope="session")
+def fixture_scores(fixture_cfg, fixture_panel):
+    """Fixture pipeline run through universe, features, labels and walk-forward anomaly scoring."""
+    from smd.anomaly.scoring import run_anomaly
+    from smd.pipeline import run_features, run_labels, run_universe
+    from smd.utils import read_dataset
+
+    run_universe(fixture_cfg)
+    run_features(fixture_cfg)
+    run_labels(fixture_cfg)
+    run_anomaly(fixture_cfg)
+    return read_dataset(fixture_cfg, "gold", "anomaly_scores")

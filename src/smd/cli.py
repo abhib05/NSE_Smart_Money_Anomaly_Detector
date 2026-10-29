@@ -127,6 +127,24 @@ def labels(config: ConfigOpt = None, run: RunOpt = None) -> None:
 
 
 @app.command()
+def anomaly(
+    model: Annotated[str, typer.Option(help="lstm_ae|iforest|all (all models are trained together)")] = "all",
+    fold: Annotated[str, typer.Option(help="'all' walk-forward folds")] = "all",
+    config: ConfigOpt = None,
+    run: RunOpt = None,
+) -> None:
+    """Walk-forward LSTM autoencoder + Isolation Forest anomaly and accumulation scores."""
+    from smd.anomaly.scoring import MODELS, run_anomaly
+
+    cfg = _setup(config)
+    r = get_run(cfg, run, "anomaly")
+    models = MODELS if model == "all" else (model, "delivery_z_rule")
+    stats = run_anomaly(cfg, models, run=r)
+    log.info("anomaly: %s", stats)
+    r.record_stage(cfg, "anomaly", stats)
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views

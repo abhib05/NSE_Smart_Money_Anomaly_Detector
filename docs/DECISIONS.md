@@ -74,3 +74,16 @@ on the total-return series). `label_end_h` is stored for purging.
   depends on the future. The future-perturbation test caught it.
 * Features are stored raw; models rank-normalise per date (winsorise 1/99%, rank to [-1, 1],
   missing -> 0).
+
+## D-012 — Anomaly-model design (Phase 4)
+* Behaviour vector (8 channels): delivery-% z, delivery-qty z, volume z, return z, range z
+  (vs own trailing 252d), close location, daily net bulk-buy value / 21d median traded value,
+  turnover rank. Clipped to ±8; missing cells -> 0; a window needs its last day observed and
+  >= 80% of days observed.
+* Walk-forward folds (skfolio `WalkForward`, expanding, yearly): first fold trains on 3 years.
+  Each fold samples <= 120k training sequences from universe members; early stopping on the
+  last 10% of the training window (time-ordered). Isolation Forest uses the same sample.
+* Score = reconstruction MSE over the last 5 days of the 30-day window (localises the anomaly
+  at *t*), converted to a cross-sectional percentile per date.
+* Accumulation filter: percentile x 1[delivery z > 0, net bulk buys 20d >= 0, 5d return >
+  -1 x 5-day vol]. The one-line baseline `delivery_z_rule` is scored with the same pipeline.

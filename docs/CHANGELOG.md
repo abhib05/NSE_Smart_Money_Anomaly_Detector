@@ -27,3 +27,10 @@
 - Forward-return labels (open t+1 → open t+1+h on total-return prices, excess vs EW universe, label end dates).
 - Future-perturbation look-ahead tests for every feature, behaviour channel and the universe; label alignment tests. The tests caught a real leak in `bh_turnover_rank` (fixed, D-011).
 - CLI: `smd universe|features|labels`.
+
+## Phase 4 — Anomaly models
+- Walk-forward folds from skfolio `WalkForward` with purge/embargo helpers and a CombinatorialPurgedCV wrapper (`cv/splits.py`).
+- PyTorch LSTM autoencoder (2x64 LSTM, 16-d bottleneck), seeded and early-stopped; per-fold checkpoints.
+- Isolation Forest baseline on behaviour summaries; one-line delivery-z rule baseline.
+- Cross-sectional percentile scores + accumulation filter → `gold/anomaly_scores`.
+- Tests: overfit-tiny-batch, shapes, determinism, anomaly separation, window look-ahead, OOS coverage, planted-event sanity, CV leakage.
