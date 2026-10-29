@@ -55,6 +55,8 @@ portfolio:
   notional_inr: 1000000
   max_adv_participation: 0.05  # position <= 5% of 21d median traded value
   hrp_lookback_days: 126
+  drift_tolerance: 0.25     # kept names are resized only when |w - target| > 25% of target
+  min_trade_inr: 2000       # smaller orders are skipped (fixed DP charges), except full exits
   sector_cap: null          # no point-in-time sector data in NSE archives (documented)
 
 backtest:

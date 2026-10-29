@@ -180,6 +180,26 @@ def train(
 
 
 @app.command()
+def backtest(
+    variant: Annotated[str, typer.Option(help="ranker variant or 'all'")] = "all",
+    weighting: Annotated[str, typer.Option(help="equal | hrp | all")] = "all",
+    config: ConfigOpt = None,
+    run: RunOpt = None,
+) -> None:
+    """Cost-aware weekly backtest on the development period (all variants by default)."""
+    from smd.backtest.run import WEIGHTINGS, run_backtests
+    from smd.model.ranker import VARIANTS
+
+    cfg = _setup(config)
+    r = get_run(cfg, run, "backtest")
+    variants = VARIANTS if variant == "all" else (variant,)
+    weightings = WEIGHTINGS if weighting == "all" else (weighting,)
+    stats = run_backtests(cfg, r, "dev", variants, weightings)
+    log.info("backtest: %s", stats)
+    r.record_stage(cfg, "backtest", stats)
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views

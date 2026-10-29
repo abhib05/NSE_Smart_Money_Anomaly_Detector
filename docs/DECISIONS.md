@@ -106,3 +106,18 @@ on the total-return series). `label_end_h` is stored for purging.
 * Purge (label end >= test start) + 20-day embargo on every fold; CombinatorialPurgedCV
   (6 folds, 2 test folds) as a robustness check on the development period.
 * SHAP from LightGBM's built-in TreeSHAP on development folds only.
+
+## D-015 — Backtest conventions (Phase 7)
+* Weekly rebalance; top 25 names; held names kept while rank <= 1.5 x 25; kept names resized
+  only if weight drifts > 25% from target; orders < ₹2,000 skipped (fixed DP charges) except
+  full exits. Hypothesis found the case that motivated the last rule: a tiny resize-sell whose
+  DP charge exceeded its proceeds and drove cash negative.
+* Each order capped at 5% of that day's traded value; position cap 5% of 21d median traded
+  value at the notional capital (₹10 lakh) and 10% of equity.
+* Delisted / stale (> 5 days without a price) holdings exit at the last price minus 10%.
+* Sharpe uses a 6.5% risk-free rate (approx. 91-day T-bill). Deflated Sharpe counts the 6
+  variant x weighting trials; the random-signal strategy is a sanity check, not a trial.
+
+## D-016 — No sector cap (Phase 7)
+NSE archives provide no point-in-time sector classification (the current industry list
+would leak today's classification into the past), so the 30% sector cap is not applied.

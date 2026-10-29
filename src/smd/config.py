@@ -99,6 +99,8 @@ class PortfolioCfg(BaseModel):
     notional_inr: float = 1_000_000
     max_adv_participation: float = 0.05
     hrp_lookback_days: int = 126
+    drift_tolerance: float = 0.25
+    min_trade_inr: float = 2000.0
     sector_cap: float | None = None
 
 

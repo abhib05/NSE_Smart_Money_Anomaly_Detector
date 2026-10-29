@@ -42,3 +42,10 @@
 ## Phase 6 — Ranking model & ablation
 - LightGBM ranker, three fixed variants, purged walk-forward CV, TreeSHAP importances, CPCV robustness; ablation table on development folds only.
 - Tests: CV leakage on the ranker's actual training rows, determinism, nested variants.
+
+## Phase 7 — Portfolio construction & backtest
+- Selection with turnover buffer, equal-weight and skfolio HRP weighting, max-weight and liquidity caps (water-filling).
+- Indian delivery cost model (STT, stamp duty, exchange, SEBI, GST, DP charges) + square-root slippage.
+- Daily backtest engine with next-open execution, liquidity-capped fills, delisting exits and per-day accounting invariants.
+- Metrics incl. Sortino, Calmar, beta/alpha vs Nifty 500, weekly hit rate, cost drag, deflated Sharpe ratio; benchmarks Nifty 500 and EW universe; random-signal sanity strategy.
+- Tests: Hypothesis property tests of invariants on random markets, zero-signal ≈ EW benchmark, delisting exit, hand-computed metrics.
