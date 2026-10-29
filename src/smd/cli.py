@@ -66,6 +66,34 @@ def bronze_cmd(config: ConfigOpt = None, run: RunOpt = None) -> None:
 
 
 @app.command()
+def clean(config: ConfigOpt = None, run: RunOpt = None) -> None:
+    """Bronze -> silver: ISIN chains, corporate-action adjustment, total-return series, DQ checks."""
+    from smd.clean.panel import build_silver
+
+    cfg = _setup(config)
+    stats = build_silver(cfg)
+    log.info("silver: %s", stats)
+    get_run(cfg, run, "clean").record_stage(cfg, "clean", stats)
+
+
+@app.command()
+def spotcheck(
+    symbol: Annotated[str, typer.Argument(help="NSE symbol")],
+    around: Annotated[str, typer.Argument(help="date YYYY-MM-DD (e.g. an ex-date)")],
+    window: int = 3,
+    config: ConfigOpt = None,
+) -> None:
+    """Print raw vs adjusted prices around a date (manual corporate-action check)."""
+    import pandas as pd
+
+    from smd.clean.panel import spot_check
+
+    cfg = _setup(config)
+    with pd.option_context("display.width", 200, "display.max_columns", 20):
+        typer.echo(spot_check(cfg, symbol, around, window).to_string(index=False))
+
+
+@app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
     from smd.db import refresh_views

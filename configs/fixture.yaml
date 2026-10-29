@@ -1,0 +1,53 @@
+# Small synthetic dataset (24 stocks x 3 years) committed under tests/fixtures/bronze.
+# `smd all --config configs/fixture.yaml` runs the whole pipeline in a few minutes, no downloads.
+paths:
+  data_dir: data/fixture
+  runs_dir: runs/fixture
+  reports_dir: reports/fixture
+  bronze_override: tests/fixtures/bronze
+
+study_start: 2021-07-01
+dev_end: 2022-12-31
+test_start: 2023-01-01
+
+universe:
+  size: 15
+  liquidity_lookback_days: 60
+  min_history_days: 60
+
+cv:
+  first_train_months: 6
+  retrain_every_months: 6
+  embargo_days: 20
+  ranker_first_train_months: 6
+
+portfolio:
+  top_k: 5
+  max_weight: 0.30
+  notional_inr: 1000000
+  hrp_lookback_days: 60
+
+anomaly:
+  seq_len: 20
+  event_top_pct: 0.05
+
+research:
+  bootstrap_samples: 200
+
+models:
+  lstm_ae:
+    hidden: 16
+    layers: 1
+    bottleneck: 4
+    batch_size: 256
+    max_epochs: 4
+    patience: 2
+    max_train_sequences: 4000
+    num_threads: 2
+  iforest:
+    n_estimators: 100
+    max_samples: 512
+  lightgbm:
+    n_estimators: 60
+    min_child_samples: 20
+    num_leaves: 7

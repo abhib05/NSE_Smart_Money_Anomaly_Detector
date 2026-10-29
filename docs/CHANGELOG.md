@@ -12,3 +12,11 @@
 - Canonical parsers for both bhavcopy schemas + bronze builder with pandera validation and a derived trading calendar (gap detection).
 - DuckDB views over all processed parquet (`smd db`). CLI: `smd ingest|bronze|db|new-run`.
 - Tests: parsers on truncated real NSE files (old and UDiFF), mocked-NSE idempotency/404/retry/immutability tests.
+
+## Phase 2 — Cleaning & data quality
+- ISIN chains (`clean/isin_map.py`): stable security ids across face-value-split ISIN changes and symbol changes.
+- Corporate actions (`clean/corporate_actions.py`): parser for NSE free-text subjects (split, consolidation, bonus, dividend incl. %-of-face-value, rights, merger); backward adjustment factors; total-return factor; missing splits/bonuses inferred from the exchange's adjusted prev_close.
+- DQ checks (`clean/dq_checks.py`): OHLC/volume/delivery rules, unexplained >30% moves, split-like jumps, robust volume z; flag counts written to `reports/dq_summary.md`.
+- Silver tables: `daily_panel`, `isin_map`, `corporate_actions`, `deals` (mapped to security ids), `benchmark`, `dq_summary`; pandera schemas.
+- Deterministic synthetic fixture (`smd/fixture.py`, `tests/fixtures/bronze`, `configs/fixture.yaml`) with planted splits, ISIN change, symbol change, delisting, bad prints and accumulation events.
+- CLI: `smd clean`, `smd spotcheck SYMBOL DATE`. Decisions D-005…D-009.

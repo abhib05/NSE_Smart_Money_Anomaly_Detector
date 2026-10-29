@@ -43,3 +43,4 @@ def fixture_panel(fixture_cfg):
 
     build_silver(fixture_cfg)
     return read_dataset(fixture_cfg, "silver", "daily_panel")
+
