@@ -1,0 +1,27 @@
+# Exact versions the project was developed and tested with (pip install -c requirements-lock.txt -e .[dev]).
+# torch is installed separately (CPU wheel index); tested with torch 2.12.0.
+coverage==7.17.0
+duckdb==2.0.0
+httpx==0.28.1
+hypothesis==6.170.13
+Jinja2==3.1.6
+lightgbm==4.7.0
+Markdown==3.7
+matplotlib==3.10.0
+mypy==2.4.1
+numpy==2.4.6
+pandas==2.3.3
+pandera==0.35.0
+pyarrow==25.0.1
+pydantic==2.9.2
+pydantic-settings==2.6.1
+pydantic_core==2.23.4
+pytest==9.1.1
+pytest-cov==7.1.0
+PyYAML==6.0.3
+ruff==0.17.3
+scikit-learn==1.6.1
+scipy==1.18.1
+skfolio==1.12.3
+statsmodels==0.14.4
+typer==0.24.1

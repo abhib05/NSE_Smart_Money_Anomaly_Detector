@@ -128,7 +128,7 @@ report, with deflated Sharpe ratios.
 
 ```bash
 python -m venv .venv && . .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+pip install -c requirements-lock.txt -e ".[dev]"   # tested versions (pandas 2.x)
 ```
 
 **On the committed synthetic fixture (no downloads, ~1–2 minutes):**

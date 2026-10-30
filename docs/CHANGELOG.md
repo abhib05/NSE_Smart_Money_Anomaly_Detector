@@ -62,3 +62,4 @@
 ## Phase 9 — Polish
 - README: problem, pipeline diagram, methodological guard-rails, results tables (dev + held-out test), charts, reproduction on the fixture and on real data, repository map, limitations, future work.
 - GitHub Actions CI: ruff, mypy, pytest on the committed fixture (never downloads from NSE), coverage gates (≥85% overall and on clean/features/universe/backtest/cv).
+- CI fix: the first CI run installed pandas 3.1 (untested major release). Added `requirements-lock.txt` with the exact tested versions (used as pip constraints in CI and the README), `pandas<3` in `pyproject.toml`, CI on Python 3.12 to match development.
