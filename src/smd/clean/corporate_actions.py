@@ -26,7 +26,8 @@ from smd.utils import get_logger
 log = get_logger(__name__)
 
 _RS = r"R(?:s|e)\.?\s*"
-_SPLIT_RE = re.compile(rf"from\s*{_RS}([\d.]+).*?to\s*{_RS}([\d.]+)", re.I)
+_AMT_RE = re.compile(r"R(?:s|e)\.?\s*([\d]+(?:\.\d+)?)", re.I)
+_SPLIT_WORDS = ("split", "splt", "sub-division", "subdivision", "sub division", "consolidat")
 _BONUS_RE = re.compile(r"bonus\s*(?:issue)?\s*[-:]?\s*(\d+)\s*:\s*(\d+)", re.I)
 _RIGHTS_RE = re.compile(r"rights\s*(?:issue)?\s*[-:]?\s*(\d+)\s*:\s*(\d+)", re.I)
 _DIV_AMT_RE = re.compile(rf"{_RS}([\d]+(?:\.\d+)?)", re.I)
@@ -40,10 +41,12 @@ def parse_subject(subject: str, face_value: float | None = None) -> list[dict]:
     s = " ".join(str(subject).split())
     low = s.lower()
     events: list[dict] = []
-    if "split" in low or "sub-division" in low or "subdivision" in low or "consolidat" in low:
-        m = _SPLIT_RE.search(s)
-        if m:
-            old, new = float(m.group(1)), float(m.group(2))
+    if any(w in low for w in _SPLIT_WORDS):
+        # "From Rs 10/- To Re 1/-", "Rs.10/- To Re.1/-", "Fv Splt Frm Rs 10 To Re 1": first two amounts
+        start = min(low.find(w) for w in _SPLIT_WORDS if w in low)  # skip e.g. a dividend amount before it
+        amts = _AMT_RE.findall(s[start:])
+        if len(amts) >= 2:
+            old, new = float(amts[0]), float(amts[1])
             if old > 0 and new > 0 and old != new:
                 kind = "split" if new < old else "consolidation"
                 events.append(dict(action_type=kind, ratio_num=old, ratio_den=new, cash_amount=0.0,
@@ -108,7 +111,7 @@ def event_factors(panel: pd.DataFrame, ca: pd.DataFrame, infer_from_prevclose: b
     `panel` must be sorted by (isin, date) with columns isin, date, close, prev_close.
     `ca` must carry a `sid` column (mapped security id). Returns `panel` with added columns
     `split_event` (price factor applied on that ex-date, 1 otherwise), `div_cash`,
-    `ca_event` (description) and boolean flags `ca_inferred_from_prevclose`, `ca_prevclose_mismatch`.
+    `ca_event` (description) and the boolean flag `ca_inferred_from_prevclose`.
     """
     p = panel
     # ex-date -> first trading day of that security on/after the ex-date
@@ -140,25 +143,26 @@ def event_factors(panel: pd.DataFrame, ca: pd.DataFrame, infer_from_prevclose: b
     prev_close_raw = p.groupby("isin", sort=False)["close"].shift(1)
     implied = p["prev_close"] / prev_close_raw
     has_px_event = split_event != 1.0
+    consecutive = p["date"].map(pd.Series(np.arange(len(p["date"].unique())), index=np.sort(p["date"].unique())))
+    consecutive = consecutive.groupby(p["isin"], sort=False).diff() == 1
     inferred = pd.Series(False, index=p.index)
-    mismatch = has_px_event & ((implied - split_event).abs() / split_event > tol) & implied.notna()
     if infer_from_prevclose:
-        cand = (~has_px_event) & implied.notna() & ((implied - 1).abs() > 0.15)
+        # only on consecutive trading days: after a gap prev_close is stale, not adjusted
+        cand = (~has_px_event) & consecutive & implied.notna() & ((implied - 1).abs() > 0.15)
         for i in cand[cand].index:
             f = match_typical_factor(float(implied.loc[i]), tol)
             if f is not None:
                 split_event.loc[i] = f
                 inferred.loc[i] = True
                 desc.loc[i] = (desc.loc[i] + ";" if desc.loc[i] else "") + f"inferred:{f:.4f}"
-    out = p.copy()
+    out = p  # columns are added in place (memory: the full panel is ~5M rows)
     out["split_event"] = split_event
     out["div_cash"] = div_cash
     out["ca_event"] = desc
     out["ca_inferred_from_prevclose"] = inferred
-    out["ca_prevclose_mismatch"] = mismatch
     log.info(
-        "corporate actions: %d price events applied (%d inferred from prev_close), %d dividend events, %d prevclose mismatches",
-        int((split_event != 1).sum()), int(inferred.sum()), int((div_cash > 0).sum()), int(mismatch.sum()),
+        "corporate actions: %d price events applied (%d inferred from prev_close), %d dividend events",
+        int((split_event != 1).sum()), int(inferred.sum()), int((div_cash > 0).sum()),
     )
     return out
 
@@ -172,7 +176,7 @@ def _backward_cumprod(event: pd.Series, groups: pd.Series) -> pd.Series:
 
 def adjustment_factors(p: pd.DataFrame) -> pd.DataFrame:
     """Adds adj_factor, tr_factor and adjusted columns. `p` sorted by (isin, date) with event columns."""
-    out = p.copy()
+    out = p
     out["adj_factor"] = _backward_cumprod(out["split_event"], out["isin"])
     prev_close = out["prev_close"].where(out["prev_close"] > 0, out.groupby("isin", sort=False)["close"].shift(1))
     div_ev = (1.0 - out["div_cash"] / prev_close).where(out["div_cash"] > 0, 1.0)

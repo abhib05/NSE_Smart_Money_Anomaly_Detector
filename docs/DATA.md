@@ -55,14 +55,72 @@ The test period starts on a calendar-year boundary because walk-forward folds re
 every 12 months on calendar years (skfolio `WalkForward(freq="12MS")`); this keeps every
 fold entirely inside either the development or the test period.
 
-## 3. Ingestion statistics *(generated)*
+## 3. Ingestion statistics (full ingest 2014-01-01 → 2026-10-28, run 2026-10-29)
 
-_Filled in after the full ingest — see section 5._
+| Dataset | Files OK | 404 / not published | Errors | Notes |
+|---|---:|---:|---:|---|
+| bhavcopy (old CSV + UDiFF) | 3,161 | 185 | 0 | 185 weekday 404s = exchange holidays |
+| index snapshots | 3,076 | 270 | 0 | niftyindices misses 85 trading days (not a gap in our data) |
+| delivery (MTO) | 3,161 | 0 | 0 | one file per trading day — no gaps |
+| bulk deals (monthly CSV) | 154 | 0 | 0 | |
+| block deals (monthly CSV) | 154 | 0 | 0 | |
+| corporate actions (quarterly) | 53 | 0 | 0 | 28,231 announcements |
 
-## 4. Data-quality flags *(generated)*
+Raw store: 574 MB. Re-running `smd ingest` immediately afterwards requested **0** files
+(idempotency check, Phase 1 acceptance). Trading-calendar gaps (trading day with bhavcopy but
+no delivery file, or index but no bhavcopy): **0**.
 
-_Filled in after `smd clean` — see section 5._
+Bronze: 5.79M bhavcopy rows (EQ + BE), 5.30M delivery rows, 173k deal rows, 276k index rows.
 
-## 5. Latest pipeline run *(generated)*
+Real-file quirks found and handled (each has a parser regression test):
+* niftyindices writes `dd/mm/yyyy` instead of `dd-mm-yyyy` in parts of 2015–2016, and has rows
+  with a closing value of 0 (dropped);
+* 9 MTO files (2017–2019) garble the header label as `rade Date <…>`;
+* one bhavcopy (2020-07-13) uses a 2-digit year (`13-Jul-20`).
 
-_Pending first full run._
+## 4. Cleaning and data-quality flags
+
+Silver panel: **4,913,597 rows, 3,160 equity securities, 3,161 trading days** (EQ series,
+equity ISINs only — ETFs excluded, D-019). 780 split/bonus/consolidation events and 15,763
+dividends applied; 479 ISIN changes linked into stable security ids.
+
+| flag | rows | % of rows | excluded from features |
+|---|---:|---:|---|
+| high_lt_open_close | 0 | 0.0000 | yes |
+| low_gt_open_close | 0 | 0.0000 | yes |
+| negative_volume | 0 | 0.0000 | yes |
+| delivery_pct_out_of_range | 0 | 0.0000 | yes |
+| deliverable_gt_traded | 0 | 0.0000 | yes |
+| possible_missing_corporate_action | 1,458 | 0.0297 | yes |
+| large_move_no_ca | 1,354 | 0.0276 | yes |
+| ca_price_mismatch | 3 | 0.0001 | yes |
+| volume_spike | 1,163 | 0.0237 | no |
+| ca_inferred_from_prevclose | 0 | 0.0000 | no |
+| div_too_large | 3 | 0.0001 | no |
+| ANY EXCLUDED | 2,815 | 0.0573 | yes |
+
+`possible_missing_corporate_action` / `large_move_no_ca` are dominated by illiquid stocks and
+returns after trading gaps; among liquid names they are real crashes (YESBANK 2020, DHFL 2018,
+Jet Airways 2019) and demergers (Tata Motors 2025, Siemens 2025), see D-019.
+
+### Corporate-action spot-check (Phase 2 acceptance)
+
+`python scripts/spotcheck_corporate_actions.py --n 6` — the most liquid securities with a
+split/bonus in the study period. Raw ex-date moves of -50% to -90% become ordinary daily moves
+after adjustment:
+
+| symbol | ex_date | event | raw_return_on_ex_date | adjusted_return_on_ex_date |
+|---|---|---|---|---|
+| RELIANCE | 2017-09-07 | bonus:0.5 | -50.3% | -0.56% |
+| ICICIBANK | 2017-06-20 | bonus:0.9091;dividend:2.50 | -8.8% | +0.34% |
+| HDFCBANK | 2025-08-26 | bonus:0.5 | -50.4% | -0.88% |
+| INFY | 2015-06-15 | bonus:0.5;dividend:29.50 | -49.9% | +0.30% |
+| TCS | 2018-05-31 | bonus:0.5;dividend:29.00 | -50.5% | -0.91% |
+| BAJFINANCE | 2016-09-08 | bonus:0.5;split:0.2 | -89.8% | +2.06% |
+
+## 5. Latest pipeline run
+
+Run `20261030-001505-ea0626` (data through 2026-10-29): universe exactly 500 stocks on every
+study day (1,321 distinct securities over time); 1.48M feature rows; 1.09M out-of-sample anomaly
+scores per model from 2018-01-01; ranker predictions from 2020 on 528k weekly rows. Full results:
+[`reports/latest/REPORT.md`](../reports/latest/REPORT.md); conclusion in DECISIONS.md D-020.

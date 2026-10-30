@@ -25,7 +25,7 @@ clean:
   volume_z_threshold: 8.0       # robust z of log volume vs trailing window
   volume_z_lookback: 60
   split_ratio_tolerance: 0.03   # tolerance when matching a jump to a split/bonus ratio
-  infer_missing_ca_from_prevclose: true
+  infer_missing_ca_from_prevclose: false  # NSE PREVCLOSE is not adjusted on ex-dates (D-018)
 
 universe:
   size: 500

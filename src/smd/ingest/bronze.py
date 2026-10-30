@@ -68,7 +68,7 @@ def build_deals(cfg: Config, manifest: Manifest) -> pd.DataFrame:
 
 def build_index(cfg: Config, manifest: Manifest) -> pd.DataFrame:
     df = _parse_many(cfg.paths.raw, _latest_ok(manifest, "index"), parsers.parse_index_snapshot)
-    df = df.dropna(subset=["close"]).drop_duplicates(["date", "index_name"], keep="last")
+    df = df[df["close"] > 0].drop_duplicates(["date", "index_name"], keep="last")
     return validate(df.sort_values(["date", "index_name"]).reset_index(drop=True), "bronze.index")
 
 

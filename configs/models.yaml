@@ -5,9 +5,9 @@ models:
     bottleneck: 16
     lr: 0.001
     batch_size: 512
-    max_epochs: 15
-    patience: 3
-    max_train_sequences: 120000   # random sample of training-window sequences per fold
+    max_epochs: 10
+    patience: 2
+    max_train_sequences: 60000    # random sample of training-window sequences per fold (CPU budget, D-017)
     val_frac: 0.1                 # last 10% of the training window (by time) for early stopping
     loss: mse                     # mse | huber
     score_last_k: 5               # score = reconstruction MSE over the last k days of the window

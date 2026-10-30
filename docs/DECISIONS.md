@@ -121,3 +121,57 @@ on the total-return series). `label_end_h` is stored for purging.
 ## D-016 — No sector cap (Phase 7)
 NSE archives provide no point-in-time sector classification (the current industry list
 would leak today's classification into the past), so the 30% sector cap is not applied.
+
+## D-017 — LSTM-AE compute budget (Phase 8)
+On the development laptop (CPU only, PyTorch 2.12) one 512-sequence batch of the 2x64 LSTM-AE
+takes ~0.36 s (8 threads was fastest; 2/4/16 threads were slower). To keep the anomaly stage
+under ~1 hour across 9 yearly folds, each fold trains on a random sample of 60k sequences for
+at most 10 epochs (patience 2). Chosen for compute, before seeing any results.
+
+## D-018 — NSE `PREVCLOSE` is not adjusted; inference disabled (Phase 8, supersedes D-006)
+Measured on the real data: for the 764 listed splits/bonuses, `prev_close / close(t-1)` matched
+the event factor on **~0%** of ex-dates in every year 2014–2026 — NSE reports the raw previous
+close. Inferring events from it produced 2,417 spurious "splits" (99.7% after a trading gap).
+Inference is therefore off by default (`clean.infer_missing_ca_from_prevclose: false`; when
+enabled it now requires consecutive trading days). Instead:
+* the split parser was made robust to NSE's many phrasings ("Fv Splt Frm Rs 10 To Re 1",
+  "Face Value Split Rs.10/- To Re.1/-"), recovering e.g. SBIN 2014 and JSWSTEEL 2017;
+  only bonus debentures / preference shares / NCRPS remain unparsed, correctly;
+* split-like jumps without an event stay `possible_missing_corporate_action` and are excluded;
+* a listed event that does not explain the move (adjusted |return| > 30%) is `ca_price_mismatch`
+  and excluded (replaces the meaningless `ca_prevclose_mismatch`).
+
+## D-019 — Equity shares only; demergers are a known limitation (Phase 8)
+ETFs (e.g. NIFTYBEES, BANKBEES) and other fund units trade in the EQ series. The panel keeps only
+equity ISINs (`INE...`); fund units (`INF...`) are dropped. Demergers (e.g. Tata Motors 2025,
+Siemens 2025, Piramal 2022) are not value-adjusted — that needs the spun-off company's price —
+so the ex-date row is flagged as an unexplained jump and excluded; windows spanning it remain
+distorted for the affected stock. About 10 liquid cases in 12 years.
+
+## D-020 — Conclusion: does the signal exist? (Phase 5 research + Phase 8 final test)
+Run `20261030-001505-ea0626`; development 2015–2024 (OOS scores from 2018, ranker OOS from 2020),
+held-out test 2025-01-03 → 2026-10-29, evaluated once (`runs/TEST_LOG.jsonl`).
+
+1. **Delivery-based accumulation is a real but small signal.** The one-line delivery-% z-score
+   has a 5-day rank IC of 0.031 (95% CI 0.027–0.036) in development and 0.029 (0.023–0.035) in
+   the test period. Event study: +0.1–0.24% excess return vs matched controls over 5 days,
+   fading by 20–40 days.
+2. **The deep anomaly model adds nothing over a one-line rule.** Raw LSTM-AE / Isolation-Forest
+   anomaly percentiles have *negative* IC (−0.016 / −0.022 dev): unusual behaviour on its own
+   predicts underperformance. Only after the accumulation (direction) filter do they turn
+   positive (≈0.017), still below the delivery-z rule. In the ranker, adding anomaly scores
+   changes 5-day IC by +0.001 (dev) and −0.003 (test) — noise.
+3. **Delivery and bulk-deal features improve the ranker.** 5-day IC base → +delivery: 0.043 →
+   0.052 (dev; CIs overlap), 0.058 → 0.069 (test); CPCV agrees (0.054 → 0.060). Gross backtest
+   CAGR rises by ~11 points (dev) and ~10 points (test).
+4. **Costs consume the edge.** A weekly, 5-day-horizon strategy turns the book over 35–42x a
+   year; STT, stamp duty, charges and slippage cost ~17% a year. Net, the best variants roughly
+   match the Nifty 500 in development (Sharpe 0.64–0.69 vs 0.65) and beat it by ~2–3 points in
+   the test period (≈0% vs −2.2%), while trailing or tying the cost-free equal-weight universe.
+
+Answer to the research question: India-specific delivery data carries information about
+1–4-week excess returns that survives out of sample, but at this horizon and turnover it does
+not survive realistic Indian trading costs, and the fraud-style deep anomaly detector adds
+nothing beyond a simple delivery rule. Natural next steps (not tuned here, to keep the test
+clean): a longer target horizon or monthly rebalancing to cut turnover, and a test of the
+delivery rule as a filter on a low-turnover base strategy.

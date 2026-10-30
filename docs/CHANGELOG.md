@@ -49,3 +49,12 @@
 - Daily backtest engine with next-open execution, liquidity-capped fills, delisting exits and per-day accounting invariants.
 - Metrics incl. Sortino, Calmar, beta/alpha vs Nifty 500, weekly hit rate, cost drag, deflated Sharpe ratio; benchmarks Nifty 500 and EW universe; random-signal sanity strategy.
 - Tests: Hypothesis property tests of invariants on random markets, zero-signal ≈ EW benchmark, delisting exit, hand-computed metrics.
+
+## Phase 8 — Full real-data run, held-out test & report
+- `smd final-test`: evaluates the frozen pipeline once on the test period; every evaluation is logged to `runs/TEST_LOG.jsonl` and repeats are refused unless `--force`.
+- `smd report`: `reports/<run_id>/REPORT.md` + `REPORT.html` with data coverage, DQ flags, universe size, IC/quintile/event-study results, ablation (dev + test), CPCV, SHAP, backtests (dev + test), deflated Sharpe, cost breakdown and limitations.
+- `smd all` runs every stage in its own process (bounded memory on a 16 GB laptop) and ends with the final test and the report; end-to-end CLI test on the fixture.
+- Real-data fixes found by the first full ingest: niftyindices `dd/mm/yyyy` dates and zero closes, garbled MTO header labels, a 2-digit-year bhavcopy, NSE's many split phrasings (SBIN 2014, JSWSTEEL 2017), ETFs in the EQ series (now excluded).
+- D-018: measured that NSE's `PREVCLOSE` is never adjusted on ex-dates — prev_close inference disabled, `ca_price_mismatch` flag added (supersedes D-006). D-017 LSTM compute budget, D-019 equity-only panel and demerger limitation.
+- Corporate-action spot-check on six large caps and ingest statistics recorded in `docs/DATA.md`.
+- Vectorised DQ hot paths and in-place cleaning for the 4.9M-row panel.

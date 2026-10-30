@@ -36,6 +36,8 @@ def trading_days(cfg: Config) -> pd.DatetimeIndex:
 def build_panel(bhav: pd.DataFrame, delivery: pd.DataFrame, ca_raw: pd.DataFrame, days: pd.DatetimeIndex,
                 cfg: Config) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     eq = bhav[bhav["series"] == "EQ"].drop(columns=["source_file"], errors="ignore")
+    # equity shares only: ETFs / MF units also trade in the EQ series but carry INF... ISINs (D-019)
+    eq = eq[eq["isin"].fillna("").str.startswith("INE")]
     dl = delivery[delivery["series"] == "EQ"].drop(columns=["source_file"], errors="ignore")
     p = eq.merge(dl, on=["date", "symbol", "series"], how="left")
 

@@ -5,8 +5,8 @@ truth planted in them:
 
 * STK03: 10 -> 2 face-value split with a **new ISIN** (tests the ISIN chain + adjustment)
 * STK07: 1:1 bonus (same ISIN)
-* STK11: 5 -> 1 split that is **missing from the corporate-action list** (prev_close is
-  adjusted by the exchange, so it must be inferred)
+* STK11: 5 -> 1 split that is **missing from the corporate-action list** (must be flagged
+  `possible_missing_corporate_action` and excluded)
 * STK15: symbol change to STK15N (same ISIN)
 * STK20: delists two-thirds of the way through; STK24 lists after ~1 year
 * STK05: one row with high < close; STK09: one 45% bad print that reverts next day
@@ -110,10 +110,7 @@ def make_fixture(seed: int = 7) -> tuple[dict[str, pd.DataFrame], Truth]:
             if i == start_i:
                 prev = c / (1 + ret[i])
             else:
-                prev = raw_close[i - 1]
-                for ed, f, _, _ in share_events:
-                    if ed == i:
-                        prev = prev * f  # exchange-adjusted previous close on the ex-date
+                prev = raw_close[i - 1]  # NSE reports the *raw* previous close, also on ex-dates (D-018)
             o = prev * np.exp(rng.normal(0, 0.004)) if i > start_i else c
             h = max(o, c) * (1 + abs(rng.normal(0, 0.007)))
             lo = min(o, c) * (1 - abs(rng.normal(0, 0.007)))

@@ -23,9 +23,9 @@ RULE_FLAGS = [
     "delivery_pct_out_of_range",
     "deliverable_gt_traded",
 ]
-STAT_FLAGS = ["large_move_no_ca", "possible_missing_corporate_action", "volume_spike"]
-INFO_FLAGS = ["ca_inferred_from_prevclose", "ca_prevclose_mismatch", "div_too_large"]
-EXCLUDE_FLAGS = [*RULE_FLAGS, "large_move_no_ca", "possible_missing_corporate_action"]
+STAT_FLAGS = ["large_move_no_ca", "possible_missing_corporate_action", "ca_price_mismatch", "volume_spike"]
+INFO_FLAGS = ["ca_inferred_from_prevclose", "div_too_large"]
+EXCLUDE_FLAGS = [*RULE_FLAGS, "large_move_no_ca", "possible_missing_corporate_action", "ca_price_mismatch"]
 EPS = 1e-9
 
 
@@ -61,9 +61,14 @@ def stat_checks(p: pd.DataFrame, max_abs_return: float, vol_z_threshold: float, 
     raw_ratio = p["close"] / g["close"].shift(1)
     has_ca = p["split_event"] != 1.0
     big = adj_ret.abs() > max_abs_return
-    looks_like_ca = raw_ratio.map(lambda r: match_typical_factor(r, tol) is not None)
+    cand = (big & ~has_ca).to_numpy()  # only evaluate the (rare) large moves
+    hits = np.zeros(len(p), dtype=bool)
+    hits[cand] = [match_typical_factor(r, tol) is not None for r in raw_ratio.to_numpy()[cand]]
+    looks_like_ca = pd.Series(hits, index=p.index)
     out["possible_missing_corporate_action"] = big & ~has_ca & looks_like_ca
     out["large_move_no_ca"] = big & ~has_ca & ~looks_like_ca
+    # a listed event that does not explain the move (wrong ex-date or partially parsed subject)
+    out["ca_price_mismatch"] = big & has_ca
     out["volume_spike"] = robust_volume_z(p, vol_lookback) > vol_z_threshold
     return out
 
@@ -76,8 +81,11 @@ def run_dq(p: pd.DataFrame, max_abs_return: float, vol_z_threshold: float, vol_l
         flags[c] = p[c].astype(bool) if c in p else False
     names = np.array(flags.columns)
     arr = flags.to_numpy()
-    out = p.copy()
-    out["dq_flags"] = [";".join(names[row]) if row.any() else "" for row in arr]
+    out = p  # in place
+    flags_str = np.full(len(arr), "", dtype=object)
+    for i in np.flatnonzero(arr.any(axis=1)):  # only flagged rows need a label
+        flags_str[i] = ";".join(names[arr[i]])
+    out["dq_flags"] = flags_str
     out["dq_exclude"] = flags[EXCLUDE_FLAGS].any(axis=1).to_numpy()
     for c in flags.columns:
         out[f"dq_{c}"] = flags[c].to_numpy()

@@ -68,7 +68,7 @@ def parse_bhavcopy_old(content: bytes) -> pd.DataFrame:
     df = df.loc[:, [c for c in df.columns if c and not c.startswith("UNNAMED")]]
     out = pd.DataFrame(
         {
-            "date": pd.to_datetime(df["TIMESTAMP"].str.strip(), format="%d-%b-%Y"),
+            "date": _old_timestamp(df["TIMESTAMP"]),
             "symbol": df["SYMBOL"].str.strip(),
             "series": df["SERIES"].str.strip(),
             "isin": df["ISIN"].str.strip(),
@@ -84,6 +84,13 @@ def parse_bhavcopy_old(content: bytes) -> pd.DataFrame:
         }
     )
     return out[BHAV_COLUMNS]
+
+
+def _old_timestamp(s: pd.Series) -> pd.Series:
+    """`15-MAR-2016` normally; a few files use a 2-digit year (`13-Jul-20`)."""
+    s = s.str.strip()
+    out = pd.to_datetime(s, format="%d-%b-%Y", errors="coerce")
+    return out.fillna(pd.to_datetime(s, format="%d-%b-%y", errors="coerce"))
 
 
 def parse_bhavcopy_udiff(content: bytes) -> pd.DataFrame:
@@ -120,8 +127,11 @@ def parse_delivery_mto(content: bytes) -> pd.DataFrame:
     trade_date = None
     rows = []
     for line in text.split("\n"):
-        if trade_date is None and "Trade Date <" in line:
-            trade_date = pd.to_datetime(line.split("Trade Date <", 1)[1].split(">", 1)[0], format="%d-%b-%Y")
+        # some files garble the label ("rade Date <30-MAR-2017>"), so match on "Date <"
+        if trade_date is None and "Date <" in line:
+            trade_date = pd.to_datetime(line.split("Date <", 1)[1].split(">", 1)[0], format="%d-%b-%Y")
+        elif trade_date is None and line.startswith("10,MTO,"):
+            trade_date = pd.to_datetime(line.split(",")[2], format="%d%m%Y")
         parts = [p.strip() for p in line.split(",")]
         if len(parts) >= 7 and parts[0] == "20":
             rows.append(parts[2:7])
@@ -185,7 +195,8 @@ def parse_index_snapshot(content: bytes) -> pd.DataFrame:
     df.columns = [c.strip() for c in df.columns]
     out = pd.DataFrame(
         {
-            "date": pd.to_datetime(df["Index Date"].str.strip(), format="%d-%m-%Y"),
+            # niftyindices uses dd-mm-yyyy in most years and dd/mm/yyyy in some (e.g. 2015)
+            "date": pd.to_datetime(df["Index Date"].str.strip().str.replace("/", "-"), format="%d-%m-%Y"),
             "index_name": df["Index Name"].str.strip(),
             "open": _num(df["Open Index Value"]),
             "high": _num(df["High Index Value"]),

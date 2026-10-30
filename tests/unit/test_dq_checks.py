@@ -44,10 +44,12 @@ def test_large_unexplained_move_flagged():
     assert out["large_move_no_ca"].tolist() == [False, False, True, False]
 
 
-def test_move_with_ca_not_flagged():
+def test_move_with_ca_not_flagged_as_missing():
     p = _panel([100, 101, 140, 141], split_event=np.array([1, 1, 0.5, 1.0]))
     out = dq.stat_checks(p, 0.30, 8, 60, 0.03)
     assert not out["large_move_no_ca"].any() and not out["possible_missing_corporate_action"].any()
+    # the listed event does not explain the adjusted move -> ca_price_mismatch
+    assert out["ca_price_mismatch"].tolist() == [False, False, True, False]
 
 
 def test_split_like_jump_flagged_as_missing_ca():
@@ -77,5 +79,7 @@ def test_volume_spike_uses_only_past_rows():
 
 def test_fixture_flags_planted_bad_rows(fixture_panel):
     flagged = fixture_panel[fixture_panel["dq_exclude"]]
-    assert set(flagged["symbol"]) == {"STK05", "STK09"}
-    assert fixture_panel["dq_ca_inferred_from_prevclose"].sum() == 1
+    assert set(flagged["symbol"]) == {"STK05", "STK09", "STK11"}
+    stk11 = fixture_panel[fixture_panel["symbol"] == "STK11"]
+    assert stk11["dq_possible_missing_corporate_action"].sum() == 1
+    assert fixture_panel["dq_ca_inferred_from_prevclose"].sum() == 0

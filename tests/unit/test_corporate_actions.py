@@ -18,10 +18,15 @@ from smd.clean import corporate_actions as cax
         (" Bonus 1:2", "bonus", 2 / 3),
         ("Bonus 3:1", "bonus", 0.25),
         ("Consolidation Of Shares From Re 1/- To Rs 10/-", "consolidation", 10.0),
+        ("Face Value Split Rs.10/- To Re.1/- Per Share", "split", 0.1),  # SBIN 2014
+        ("Fv Splt Frm Rs 10 To Re 1", "split", 0.1),  # JSWSTEEL 2017
+        ("Sub Division Of Shares From Rs 2/- To Re 1/-", "split", 0.5),
+        ("Annual General Meeting/Dividend - Rs 10 Per Share/Face Value Split (Sub-Division) - From Rs 10/- "
+         "Per Share To Re 1/- Per Share (Purpose Revised)", "split", 0.1),
     ],
 )
 def test_parse_price_events(subject, kind, factor):
-    ev = cax.parse_subject(subject)
+    ev = [e for e in cax.parse_subject(subject) if e["action_type"] != "dividend"]
     assert ev[0]["action_type"] == kind
     assert ev[0]["price_factor"] == pytest.approx(factor)
 
@@ -88,7 +93,7 @@ def test_missing_split_inferred_from_prevclose():
     raw = np.array([500.0, 505, 101.0, 102])
     prev = np.array([np.nan, 500, 101.0, 101])  # exchange-adjusted prev close on ex-date
     p, ca = _series(raw, prev)
-    out = cax.event_factors(p, ca, infer_from_prevclose=True, tol=0.03)
+    out = cax.event_factors(p, ca, infer_from_prevclose=True, tol=0.03)  # opt-in (D-018)
     assert out["ca_inferred_from_prevclose"].tolist() == [False, False, True, False]
     adj = cax.adjustment_factors(out)
     assert adj["adj_close"].pct_change().abs().max() < 0.02

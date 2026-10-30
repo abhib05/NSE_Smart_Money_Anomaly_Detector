@@ -94,3 +94,29 @@ def test_index_snapshot(sample_bytes):
     assert list(df.columns) == parsers.INDEX_COLUMNS
     n50 = df.set_index("index_name").loc["Nifty 50"]
     assert n50["close"] == pytest.approx(7460.6)
+
+
+def test_mto_with_garbled_trade_date_label():
+    content = (b"Security Wise Delivery Position - Compulsory Rolling Settlement\n10,MTO,30032017,1,1\n"
+               b"rade Date <30-MAR-2017>,Settlement Type <N>\nRecord Type,Sr No,Name of Security,...\n"
+               b"20,1,20MICRONS,EQ,24653,17008,68.99\n")
+    df = parsers.parse_delivery_mto(content)
+    assert (df["date"] == pd.Timestamp("2017-03-30")).all() and df["deliverable_qty"].iloc[0] == 17008
+
+
+def test_mto_date_from_record_10_when_no_label():
+    content = b"Security Wise Delivery Position\n10,MTO,30032017,1,1\n20,1,ABC,EQ,10,5,50.0\n"
+    assert parsers.parse_delivery_mto(content)["date"].iloc[0] == pd.Timestamp("2017-03-30")
+
+
+def test_old_bhavcopy_two_digit_year():
+    import io
+    import zipfile
+
+    csv = (b"SYMBOL,SERIES,OPEN,HIGH,LOW,CLOSE,LAST,PREVCLOSE,TOTTRDQTY,TOTTRDVAL,TIMESTAMP,TOTALTRADES,ISIN\r\n"
+           b"20MICRONS,EQ,32.85,33.85,31.85,33.45,33.85,32.3,187303,6187285.7,13-Jul-20,1382,INE144J01027\r\n")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("cm13JUL2020bhav.csv", csv)
+    df = parsers.parse_bhavcopy(buf.getvalue())
+    assert df["date"].iloc[0] == pd.Timestamp("2020-07-13")

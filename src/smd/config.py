@@ -64,7 +64,7 @@ class CleanCfg(BaseModel):
     volume_z_threshold: float = 8.0
     volume_z_lookback: int = 60
     split_ratio_tolerance: float = 0.03
-    infer_missing_ca_from_prevclose: bool = True
+    infer_missing_ca_from_prevclose: bool = False
 
 
 class UniverseCfg(BaseModel):
@@ -144,9 +144,9 @@ class LstmAECfg(BaseModel):
     bottleneck: int = 16
     lr: float = 1e-3
     batch_size: int = 512
-    max_epochs: int = 15
-    patience: int = 3
-    max_train_sequences: int = 120_000
+    max_epochs: int = 10
+    patience: int = 2
+    max_train_sequences: int = 60_000
     val_frac: float = 0.1
     loss: str = "mse"
     score_last_k: int = 5

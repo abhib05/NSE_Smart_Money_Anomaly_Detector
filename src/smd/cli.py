@@ -199,6 +199,71 @@ def backtest(
     r.record_stage(cfg, "backtest", stats)
 
 
+@app.command("final-test")
+def final_test(
+    force: Annotated[bool, typer.Option(help="re-evaluate a configuration already evaluated (logged)")] = False,
+    config: ConfigOpt = None,
+    run: RunOpt = None,
+) -> None:
+    """Evaluate the frozen pipeline ONCE on the held-out test period (logged in runs/TEST_LOG.jsonl)."""
+    from smd.final_test import run_final_test
+
+    cfg = _setup(config)
+    r = get_run(cfg, run, "final-test")
+    stats = run_final_test(cfg, r, force)
+    log.info("final test: %s", stats)
+    r.record_stage(cfg, "final_test", stats)
+
+
+@app.command()
+def report(config: ConfigOpt = None, run: RunOpt = None) -> None:
+    """Build reports/<run_id>/REPORT.md and REPORT.html from a run's artifacts."""
+    from smd.report.build import build_report
+
+    cfg = _setup(config)
+    r = get_run(cfg, run, "report")
+    path = build_report(cfg, r)
+    typer.echo(f"report: {path}")
+
+
+@app.command("all")
+def all_cmd(
+    final: Annotated[bool, typer.Option("--final-test/--no-final-test", help="also evaluate the test period")] = True,
+    force_final: Annotated[bool, typer.Option(help="pass --force to final-test")] = False,
+    in_process: Annotated[bool, typer.Option(help="run stages in this process (small data / tests)")] = False,
+    config: ConfigOpt = None,
+) -> None:
+    """Full pipeline end to end in a new run: ingest -> ... -> backtest -> final test -> report.
+
+    Each stage runs in its own Python process (same run id), so peak memory is one stage's,
+    not the sum of all stages' leftovers - the full NSE panel needs this on a 16 GB laptop."""
+    import subprocess
+    import sys
+
+    cfg = _setup(config)
+    r = new_run(cfg, "all")
+    log.info("run %s", r.run_id)
+    stages: list[list[str]] = []
+    if cfg.paths.bronze_override is None:
+        stages.append(["ingest"])
+    else:
+        log.info("using bronze tables from %s (no download)", cfg.paths.bronze_override)
+    stages += [["clean"], ["universe"], ["features"], ["labels"], ["anomaly"], ["research"], ["train"], ["backtest"]]
+    if final:
+        stages.append(["final-test", *(["--force"] if force_final else [])])
+    stages += [["db"], ["report"]]
+    for stage in stages:
+        log.info("=== %s ===", stage[0])
+        args = [*stage, *(["--config", config] if config else []), *(["--run", r.run_id] if stage[0] != "db" else [])]
+        if in_process:
+            app(args, standalone_mode=False)
+            continue
+        res = subprocess.run([sys.executable, "-m", "smd.cli", *args], check=False)
+        if res.returncode != 0:
+            log.error("stage %s failed (exit %d); resume with `smd %s --run %s`", stage[0], res.returncode, stage[0], r.run_id)
+            raise typer.Exit(code=res.returncode)
+
+
 @app.command()
 def db(config: ConfigOpt = None) -> None:
     """(Re)create DuckDB views over every processed parquet dataset."""
