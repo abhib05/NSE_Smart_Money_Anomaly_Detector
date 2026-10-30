@@ -58,3 +58,7 @@
 - D-018: measured that NSE's `PREVCLOSE` is never adjusted on ex-dates — prev_close inference disabled, `ca_price_mismatch` flag added (supersedes D-006). D-017 LSTM compute budget, D-019 equity-only panel and demerger limitation.
 - Corporate-action spot-check on six large caps and ingest statistics recorded in `docs/DATA.md`.
 - Vectorised DQ hot paths and in-place cleaning for the 4.9M-row panel.
+
+## Phase 9 — Polish
+- README: problem, pipeline diagram, methodological guard-rails, results tables (dev + held-out test), charts, reproduction on the fixture and on real data, repository map, limitations, future work.
+- GitHub Actions CI: ruff, mypy, pytest on the committed fixture (never downloads from NSE), coverage gates (≥85% overall and on clean/features/universe/backtest/cv).
